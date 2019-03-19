@@ -101,7 +101,7 @@ class DockerMaster(object):
             SysOut.err_string("Could not remove requested container, exception:\n{}".format(e))
             return False
 
-    def cpu_per_container(self):
+    def stats_info_per_container(self):
         containers = {}
         sum_of_cpu = {}
         counters = {}

@@ -29,4 +29,4 @@ class DockerService(object):
         """
         get stats of local running images, such as CPU usage per image
         """
-        return DockerService.__docker_master.cpu_per_container()
+        return DockerService.__docker_master.stats_info_per_container()
