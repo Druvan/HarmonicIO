@@ -114,44 +114,91 @@ class DockerMaster(object):
 
         SysOut.debug_string("Containers to check: {}".format(conts_to_check))
 
-        deb_individual_cpu = {}
+        deb_individual = {}
         for container in conts_to_check:
             name = (str(container.image)).split('\'')[1]
-            cpu = self.calculate_cpu_usage(container)
+            stats = self.get_container_stats(container)
+
+            SysOut.debug_string("Calculating cpu usage for container {}".format(container))
+            cpu = self.calculate_cpu_usage(stats)
+            memory = self.calculate_memory_usage(stats)
+
+
+            if not name in containers:
+                containers[name] = {}
+            
+            containers[name]['count'] =  containers[name].get('count',0) + 1
+            self.update_avg_info(containers[name],Definition.get_str_size_desc(),cpu)
+            self.update_avg_info(containers[name],Definition.get_str_memory_avg(),memory)
+
+            
             sum_of_cpu[name] = sum_of_cpu.get(name, 0) + cpu if cpu else 0
             counters[name] = counters.get(name, 0) + 1
-            if not name in deb_individual_cpu:
-                deb_individual_cpu[name] = []
-            deb_individual_cpu[name].append(cpu)
 
+            if not name in deb_individual:
+                deb_individual[name] = {}
+            self.add_debug_info(deb_individual[name],'cpu',cpu)
+            self.add_debug_info(deb_individual[name],'memory',memory)
 
-        for container in sum_of_cpu:
-            containers[container] = {Definition.get_str_size_desc() : sum_of_cpu[container]/counters[container]}
-
-        containers["DEBUG"] = deb_individual_cpu
+        containers["DEBUG"] = deb_individual
 
         SysOut.debug_string("CPU per container: {}".format(containers))
         return containers
 
+    def update_avg_info(self,container_dict,info_key,new_value):
+        avg = container_dict.get(info_key, 0)
+        count = container_dict['count']
+        new_avg = avg + ( (new_value-avg) / count )
+        container_dict[info_key] = new_avg
 
-    def calculate_cpu_usage(self, container):
+
+    def add_debug_info(self,container_dict,info_key,info):
+        
+        if not info_key in container_dict:
+            container_dict[info_key] = []
+        container_dict[info_key].append(info)
+
+        return container_dict
+
+
+
+    def get_container_stats(self, container):
+
+        try:
+            stats = self.__client.api.stats(container.name, stream=False)
+            
+        except (NotFound, HTTPError):
+            stats = None
+        
+        return stats
+
+    def calculate_memory_usage(self,stats):
+        """
+        calculate given container stats
+        Returns memory usage of container across instances on current worker as a fraction of maximum memory usage (1.0).
+        Based on framework: https://github.com/eon01/DoMonit/blob/master/domonit/stats.py
+        """
+        memory_usage_procent = None
+        
+        if stats:
+            try:
+                memory_stats_usage = int(stats['memory_stats']['usage'])
+                memory_stats_limit = int(stats['memory_stats']['limit'])
+                memory_usage_procent = memory_stats_usage/memory_stats_limit
+
+            except (KeyError, JSONDecodeError):
+                memory_usage_procent = None
+
+        return memory_usage_procent
+
+    def calculate_cpu_usage(self, stats):
         """
         calculate given container stats
         Returns CPU usage of container across instances on current worker as a fraction of maximum cpu usage (1.0).
         Based on discussion here: https://stackoverflow.com/questions/30271942/get-docker-container-cpu-usage-as-percentage
         """
 
-        SysOut.debug_string("Calculating cpu usage for container {}".format(container))
-
         current_CPU = None
-
-        # get worker stats via docker api
-        try:
-            stats = self.__client.api.stats(container.name, stream=False)
-        except (NotFound, HTTPError):
-            stats = None
-
-
         if stats:
             try:
                 # calculate the change for the cpu usage of the container in between readings
