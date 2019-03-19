@@ -1,6 +1,6 @@
 {
     "packing_interval" : 1,
-    "default_cpu_share" : 0.5, 
+    "default_cpu_share" : 0.3, 
     "profiling_interval" : 5,
     "predictor_interval" : 2,
     "lower_rate_limit" : 5,
