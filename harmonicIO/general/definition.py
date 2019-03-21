@@ -33,10 +33,6 @@ class Definition(object):
         return "avg_cpu"
 
     @staticmethod
-    def get_str_memory_avg():
-        return "avg_mem"
-
-    @staticmethod
     def get_str_node_role():
         return "node_role"
 
