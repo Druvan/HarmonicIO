@@ -47,11 +47,12 @@ class ContainerQueue():
     def put_container(self, container_data):
         self.queue_lock()
         try:
-            if container_data.get(Definition.get_str_size_desc()) == None:
+            if container_data.get(Definition.get_str_size_data()) == None:
                 size_data = LookUpTable.ImageMetadata.get_metadata(container_data[Definition.Container.get_str_con_image_name()])
+                  
                 if size_data:
-                    size_data = size_data.get(Definition.get_str_size_desc())
-                container_data[Definition.get_str_size_desc()] = size_data
+                    size_data = size_data.get(Definition.get_str_size_data())
+                container_data[Definition.get_str_size_data()] = size_data
 
             ttl = container_data.get("TTL")
             if ttl == None:
@@ -212,8 +213,11 @@ class ContainerAllocator():
             try:
                 # if any containers don't yet have average cpu usage, add default value now
                 for cont in container_list:
-                    if cont.get(self.size_descriptor) == None:
-                        cont[self.size_descriptor] = self.default_cpu_share
+                    if cont.get(Definition.get_str_size_data()) == None:
+                        cont[Definition.get_str_size_data()] = {}
+                        cont[Definition.get_str_size_data()][self.size_descriptor] = self.default_cpu_share
+                        cont[Definition.get_str_size_data()][Definition.get_str_memory_avg()] = self.default_cpu_share
+                        
                         SysOut.debug_string("Container {} added size".format(cont))
                 bins_layout = self.packing_algorithm(container_list, self.bins, self.size_descriptor)
                 self.bins = bins_layout
@@ -308,7 +312,8 @@ class ContainerAllocator():
     def start_container_on_worker(self, target_worker, container):
         # send request to worker
         cont = dict(container)
-        cont[Definition.Container.get_str_cpu_share()] = container[self.size_descriptor]
+         
+        cont[Definition.Container.get_str_cpu_share()] = container[Definition.get_str_size_data()][self.size_descriptor]
         worker_url = "http://{}:{}/docker?token=None&command=create".format(target_worker[0], target_worker[1])
         req_data = bytes(json.dumps(cont), 'utf-8')
         resp = urlopen(worker_url, req_data)

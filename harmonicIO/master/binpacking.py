@@ -8,6 +8,7 @@ class BinPacking():
         """
         perform a first fit bin packing on the input list, using the alredy existing list of available bins if provided
         """
+        
         bins = []
         if bin_layout:
             bins = sorted(bin_layout, key=lambda i: i.index)
@@ -38,9 +39,9 @@ class Bin():
         REQUEUED = "requeued"
     
     class Item():
-        def __init__(self, data, size_descriptor=Definition.get_str_size_desc()):
+        def __init__(self, data, size_descriptor=Definition.get_str_size_desc()):   
             self.size_descriptor = size_descriptor
-            self.size = data[self.size_descriptor]
+            self.size = data[Definition.get_str_size_data()]
             self.data = data
 
         def jsonify(self):
@@ -57,11 +58,11 @@ class Bin():
 
     def pack(self, item_data, size_descriptor):
         item = self.Item(item_data, size_descriptor)
-        if item.size < self.free_space - self.space_margin:
+        if item.size[size_descriptor] < self.free_space - self.space_margin: # TODO: Gör multi dim
             item.data["bin_index"] = self.index
             item.data["bin_status"] = self.ContainerBinStatus.PACKED
             self.items.append(item)
-            self.free_space -= item.size
+            self.free_space -= item.size[size_descriptor] # TODO: Gör multi dim
             return True
         else:
             del item  
@@ -70,7 +71,7 @@ class Bin():
     def remove_item_in_bin(self, identifier, target):
         for i in range(len(self.items)):
             if self.items[i].data[identifier] == target:
-                self.free_space += self.items[i].size
+                self.free_space += self.items[i].size[Definition.get_str_size_desc()] # TODO: Gör multi dim
                 if self.free_space > 1.0:
                     self.free_space = 1.0
                 del self.items[i].data["bin_index"]
