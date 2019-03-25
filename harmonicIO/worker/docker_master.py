@@ -103,8 +103,7 @@ class DockerMaster(object):
 
     def stats_info_per_container(self):
         containers = {}
-        sum_of_cpu = {}
-        counters = {}
+        tmp_containers = {}
 
         try:
             conts_to_check = self.__client.containers.list(all=False)
@@ -113,43 +112,58 @@ class DockerMaster(object):
             conts_to_check = []
 
         SysOut.debug_string("Containers to check: {}".format(conts_to_check))
-
         deb_individual = {}
         for container in conts_to_check:
             name = (str(container.image)).split('\'')[1]
             stats = self.get_container_stats(container)
+            if stats:
+                if not name in containers:
+                    containers[name] = {}
+                    tmp_containers[name] = {}
+                
+                cpu = self.calculate_cpu_usage(stats)
 
-            SysOut.debug_string("Calculating cpu usage for container {}".format(container))
-            cpu = self.calculate_cpu_usage(stats)
-            memory = self.calculate_memory_usage(stats)
+                if(not cpu):
+                    cpu = 0
+                tmp_containers[name]['cpu'] = tmp_containers[name].get('cpu',0) + cpu
+                memory = self.calculate_memory_usage(stats)
+                if(not memory):
+                    memory = 0
+                tmp_containers[name]['memory'] = tmp_containers[name].get('memory',0) + memory
 
+                
+                count = tmp_containers[name].get('count',0) + 1
+                tmp_containers[name]['count'] = count
 
-            if not name in containers:
-                containers[name] = {}
+    
+
+                if not name in deb_individual:
+                    deb_individual[name] = {}
+                self.add_debug_info(deb_individual[name],'cpu',cpu)
+                self.add_debug_info(deb_individual[name],'memory',memory)
+
+        for name,tmp_container in tmp_containers.items():
             
-            containers[name]['count'] =  containers[name].get('count',0) + 1
-            self.update_avg_info(containers[name],Definition.get_str_size_desc(),cpu)
-            self.update_avg_info(containers[name],Definition.get_str_memory_avg(),memory)
+            count = tmp_container['count']
+            sum_of_cpu = tmp_container['cpu']
+            sum_of_memory = tmp_container['memory']
 
-            
-            sum_of_cpu[name] = sum_of_cpu.get(name, 0) + cpu if cpu else 0
-            counters[name] = counters.get(name, 0) + 1
-
-            if not name in deb_individual:
-                deb_individual[name] = {}
-            self.add_debug_info(deb_individual[name],'cpu',cpu)
-            self.add_debug_info(deb_individual[name],'memory',memory)
-
+            self.update_avg_info(containers[name],Definition.get_str_size_desc(),sum_of_cpu,count)
+            self.update_avg_info(containers[name],Definition.get_str_memory_avg(),sum_of_memory,count)
+        
         containers["DEBUG"] = deb_individual
 
-        SysOut.debug_string("CPU per container: {}".format(containers))
+        SysOut.debug_string("Size per container: {}".format(containers))
         return containers
 
-    def update_avg_info(self,container_dict,info_key,new_value):
-        avg = container_dict.get(info_key, 0)
-        count = container_dict['count']
-        new_avg = avg + ( (new_value-avg) / count )
-        container_dict[info_key] = new_avg
+    def update_avg_info(self,container_dict,info_key,sum,count):
+        if(count > 0):
+            avg = sum/count
+        else: 
+            avg = 0
+
+        container_dict[info_key] = avg
+        
 
 
     def add_debug_info(self,container_dict,info_key,info):
