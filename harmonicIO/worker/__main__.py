@@ -67,7 +67,7 @@ def update_worker_status():
                             body=s_content)
 
             if r.status != 200:
-                SysOut.err_string("Cannot update worker status to the master!")
+                SysOut.err_string("Cannot update worker status to the master! {}").format(r)
             else:
                 SysOut.debug_string("Reports status to master node complete.")
 
