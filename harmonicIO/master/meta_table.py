@@ -236,6 +236,7 @@ class LookUpTable(object):
             LookUpTable.ImageMetadata.datalock.acquire()
             try:
                 ret = LookUpTable.ImageMetadata.__container_data.get(container_image_name)
+                print("\n TEST!!!! HÄR!!!\n {}\n".format(ret))
             finally:
                 LookUpTable.ImageMetadata.datalock.release()
             return ret
@@ -250,16 +251,18 @@ class LookUpTable(object):
             LookUpTable.ImageMetadata.datalock.acquire()
             try:
                 container_dataset = LookUpTable.ImageMetadata.__container_data
-                c_data = container_dataset.get(container_image_name, {})
+                c_data = container_dataset.get(container_image_name, {Definition.get_str_size_data() : {}})
                 
                 history = c_data.get("update_count", 0)
                 if history < 10000:
                     c_data["update_count"] = history + 1
                 for field in data:
-                    c_data[field] = (history * float(c_data.get(field, 0)) + float(data[field])) / (history + 1)
+                    # TODO: Är uppdateringen av avg rätt?
+                    c_data[Definition.get_str_size_data()][field] = (history * float(c_data.get(field, 0)) + float(data[field])) / (history + 1)
+                    # TODO: Görs bara på CPU i nu läget.
                     if field == Definition.get_str_size_desc():
-                        c_data[field] = max(Setting.get_min_cpu(), c_data[field])
-
+                        c_data[Definition.get_str_size_data()][field] = max(Setting.get_min_cpu(), c_data[Definition.get_str_size_data()][field])
+                print("\n TEST!!!! c_data!!!\n {}\n".format(c_data))
                 container_dataset[container_image_name] = c_data
             finally:
                 LookUpTable.ImageMetadata.datalock.release()

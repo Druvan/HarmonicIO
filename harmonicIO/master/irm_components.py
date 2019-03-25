@@ -39,8 +39,7 @@ class ContainerQueue():
         try:
             for item in self.__queue.queue:
                 if item[Definition.Container.get_str_con_image_name()] == c_image:
-                    for field in [Definition.get_str_size_desc()]:
-                        item[field] = update_data[field]
+                    item[Definition.get_str_size_data()] = update_data[Definition.get_str_size_data()]
         finally:
             self.queue_unlock()
 
@@ -373,17 +372,23 @@ class WorkerProfiler():
         SysOut.debug_string("Gathering metadata for containers: {}".format(running_containers))
         for container_name in running_containers:
             total_counter = 0
-            avg_sum = 0
+            avg_sum = {}
             for worker in current_workers:
                 local_counter = 0
                 if container_name in current_workers[worker]["local_image_stats"]:
                     for local in current_workers[worker][Definition.REST.get_str_docker()]:
                         if local[Definition.Container.Status.get_str_image()] == container_name:
                             local_counter +=1
-                    avg_sum += current_workers[worker]["local_image_stats"][container_name][self.c_allocator.size_descriptor] * local_counter
+                    for descriptor in current_workers[worker]["local_image_stats"][container_name]:
+ 
+                        avg_sum[descriptor] = avg_sum.get(descriptor,0) + current_workers[worker]["local_image_stats"][container_name][descriptor] * local_counter
+                    [self.c_allocator.size_descriptor] * local_counter
                 total_counter += local_counter
             if total_counter:
-                LookUpTable.ImageMetadata.push_metadata(container_name, {self.c_allocator.size_descriptor : avg_sum/total_counter})
+                data = {}
+                for descriptor in avg_sum:
+                    data[descriptor] = avg_sum[descriptor]/total_counter
+                LookUpTable.ImageMetadata.push_metadata(container_name, data)
 
 
 class LoadPredictor():
