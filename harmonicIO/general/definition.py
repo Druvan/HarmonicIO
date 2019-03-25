@@ -28,9 +28,18 @@ class Definition(object):
     def get_str_node_name():
         return "node_name"
 
+
     @staticmethod
     def get_str_size_desc():
         return "avg_cpu"
+
+    @staticmethod
+    def get_str_memory_avg():
+        return "avg_memory"
+        
+    @staticmethod
+    def get_str_size_data():
+        return "size_data"
 
     @staticmethod
     def get_str_node_role():
