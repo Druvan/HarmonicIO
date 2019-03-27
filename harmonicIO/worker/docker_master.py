@@ -102,8 +102,10 @@ class DockerMaster(object):
             return False
 
     def stats_info_per_container(self):
+
         containers = {}
         tmp_containers = {}
+        counts = {}
 
         try:
             conts_to_check = self.__client.containers.list(all=False)
@@ -114,42 +116,49 @@ class DockerMaster(object):
         SysOut.debug_string("Containers to check: {}".format(conts_to_check))
         deb_individual = {}
         for container in conts_to_check:
-            name = (str(container.image)).split('\'')[1]
+            container_name = (str(container.image)).split('\'')[1]
             stats = self.get_container_stats(container)
+            current_cont_stats = {}
             if stats:
-                if not name in containers:
-                    containers[name] = {}
-                    tmp_containers[name] = {}
+                if not container_name in containers:
+                    containers[container_name] = {}
+                    tmp_containers[container_name] = {}
                 
-                cpu = self.calculate_cpu_usage(stats)
-
-                if(not cpu):
-                    cpu = 0
-                tmp_containers[name]['cpu'] = tmp_containers[name].get('cpu',0) + cpu
-                memory = self.calculate_memory_usage(stats)
-                if(not memory):
-                    memory = 0
-                tmp_containers[name]['memory'] = tmp_containers[name].get('memory',0) + memory
-
+                current_cont_stats[Definition.get_str_size_desc()] = self.calculate_cpu_usage(stats)
+                current_cont_stats[Definition.get_str_memory_avg()] = self.calculate_memory_usage(stats)
                 
-                count = tmp_containers[name].get('count',0) + 1
-                tmp_containers[name]['count'] = count
+                if not container_name in deb_individual:
+                    deb_individual[container_name] = {}
+                for type_name, type_value in current_cont_stats.items(): 
+                    if(current_cont_stats[type_name] != None):
+                        tmp_containers[container_name][type_name] = tmp_containers[container_name].get(type_name,0) + current_cont_stats[type_name]
+                        self.add_debug_info(deb_individual[container_name],type_name,current_cont_stats[type_name])
+                
+                print("INNAN if memory!!!!!",tmp_containers)
+
+                # if(memory != None):
+                #     print("EFTER if memory!!!!!",memory)
+                #     tmp_containers[name][Definition.get_str_memory_avg()] = tmp_containers[name].get(Definition.get_str_memory_avg(),0) + current_cont_stats[Definition.get_str_memory_avg()]
+                
+                print("INNAN TMP!!!!!",current_cont_stats)
+                if( not tmp_containers[container_name] ):
+                    del tmp_containers[container_name]
+                    continue
+                count = counts.get(container_name,0) + 1
+                counts[container_name] = count
 
     
 
-                if not name in deb_individual:
-                    deb_individual[name] = {}
-                self.add_debug_info(deb_individual[name],'cpu',cpu)
-                self.add_debug_info(deb_individual[name],'memory',memory)
 
-        for name,tmp_container in tmp_containers.items():
+                # for type_name,type_avg in tmp_containers[container_name].items():
+                #     self.add_debug_info(deb_individual[container_name],type_name,current_cont_stats[type_name])
+
+        for container_name,tmp_container in tmp_containers.items():
             
-            count = tmp_container['count']
-            sum_of_cpu = tmp_container['cpu']
-            sum_of_memory = tmp_container['memory']
-
-            self.update_avg_info(containers[name],Definition.get_str_size_desc(),sum_of_cpu,count)
-            self.update_avg_info(containers[name],Definition.get_str_memory_avg(),sum_of_memory,count)
+            count = counts[container_name]
+            print("EFTERTMP!!!!!",tmp_container)
+            for type_name,type_avg in tmp_container.items():
+                self.update_avg_info(containers[container_name],type_name,type_avg,count)
         
         containers["DEBUG"] = deb_individual
 
@@ -164,7 +173,14 @@ class DockerMaster(object):
 
         container_dict[info_key] = avg
         
+    def calc_procent(self, numinator, denominator):
 
+        procent = None
+
+        if(denominator != 0):
+            procent = numinator/denominator
+
+        return procent
 
     def add_debug_info(self,container_dict,info_key,info):
         
@@ -198,8 +214,9 @@ class DockerMaster(object):
             try:
                 memory_stats_usage = int(stats['memory_stats']['usage'])
                 memory_stats_limit = int(stats['memory_stats']['limit'])
-                memory_usage_procent = memory_stats_usage/memory_stats_limit
 
+                memory_usage_procent = self.calc_procent(memory_stats_usage, memory_stats_limit)
+                print("MEM",memory_usage_procent,memory_stats_usage,memory_stats_limit)
             except (KeyError, JSONDecodeError):
                 memory_usage_procent = None
 
@@ -221,13 +238,12 @@ class DockerMaster(object):
                 system_delta = stats["cpu_stats"]["system_cpu_usage"] - stats["precpu_stats"]["system_cpu_usage"]
 
                 #if system_delta > 0.0 and cpu_delta > 0.0:
-                current_CPU = (cpu_delta / system_delta) # Num of cpu's: len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"])
+                current_CPU = self.calc_procent(cpu_delta, system_delta) # Num of cpu's: len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"])
 
             except (KeyError, JSONDecodeError):
                 current_CPU = None
 
         return current_CPU
-
 
     def run_container(self, container_name, cpu_share=0.5, volatile=False):
 
