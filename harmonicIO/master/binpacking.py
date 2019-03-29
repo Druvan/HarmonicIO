@@ -4,7 +4,7 @@ from harmonicIO.general.definition import Definition
 class BinPacking():
 
     @staticmethod
-    def first_fit(input_list, bin_layout, size_descriptor):
+    def first_fit(input_list, bin_layout, size_descriptor): # TODO: REMOVE size_desc
         """
         perform a first fit bin packing on the input list, using the alredy existing list of available bins if provided
         """
@@ -17,14 +17,14 @@ class BinPacking():
         for item in input_list:
             item_packed = False
             for bin_ in bins:
-                if bin_.pack(item, size_descriptor):
+                if bin_.pack(item):
                     item_packed = True
                     break
                     
             # otherwise make new bin and pack item there
             if not item_packed:
                 bins.append(Bin(len(bins)))
-                if bins[len(bins)-1].pack(item, size_descriptor):
+                if bins[len(bins)-1].pack(item):
                     item_packed = True
         
         return bins
@@ -39,9 +39,8 @@ class Bin():
         REQUEUED = "requeued"
     
     class Item():
-        def __init__(self, data, size_descriptor=Definition.get_str_size_desc()):   
-            self.size_descriptor = size_descriptor
-            self.size = data[Definition.get_str_size_data()]
+        def __init__(self, data):   
+            self.size = data['size_data']
             self.data = data
 
         def jsonify(self):
@@ -52,28 +51,33 @@ class Bin():
 
     def __init__(self, bin_index):
         self.items = []
-        self.free_space = 1.0
+        self.free_space = self.get_type_value_dict([Definition.get_str_size_desc(),Definition.get_str_memory_avg()],1.0)
         self.index = bin_index
-        self.space_margin = 0.0
+        self.space_margin = self.get_type_value_dict([Definition.get_str_size_desc(),Definition.get_str_memory_avg()],0.0)
 
-    def pack(self, item_data, size_descriptor):
-        item = self.Item(item_data, size_descriptor)
-        if item.size[size_descriptor] < self.free_space - self.space_margin: # TODO: Gör multi dim
-            item.data["bin_index"] = self.index
-            item.data["bin_status"] = self.ContainerBinStatus.PACKED
-            self.items.append(item)
-            self.free_space -= item.size[size_descriptor] # TODO: Gör multi dim
-            return True
-        else:
-            del item  
-            return False
+    def pack(self, item_data):
+        item = self.Item(item_data)
+        for size_descriptor in self.free_space:
+            if item.size[size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor]:
+                continue
+            else:
+                del item  
+                return False
+        item.data["bin_index"] = self.index
+        item.data["bin_status"] = self.ContainerBinStatus.PACKED
+        
+        for size_descriptor in self.free_space:
+            self.free_space[size_descriptor] -= item.size[size_descriptor]
+        self.items.append(item)
+        return True
 
     def remove_item_in_bin(self, identifier, target):
         for i in range(len(self.items)):
             if self.items[i].data[identifier] == target:
-                self.free_space += self.items[i].size[Definition.get_str_size_desc()] # TODO: Gör multi dim
-                if self.free_space > 1.0:
-                    self.free_space = 1.0
+                for size_descriptor in self.free_space:
+                    self.free_space[size_descriptor] += self.items[i].size[size_descriptor]
+                    if self.free_space[size_descriptor] > 1.0:
+                        self.free_space[size_descriptor] = 1.0
                 del self.items[i].data["bin_index"]
                 del self.items[i].data["bin_status"]
                 del self.items[i]
@@ -84,15 +88,15 @@ class Bin():
     def update_items_in_bin(self, identifier, update_data):
         for item in self.items:
             if item.data[identifier] == update_data[identifier] and not item.data.get("bin_status") == Bin.ContainerBinStatus.RUNNING:
-                self.free_space += item.size
-                for field in [item.size_descriptor]:
-                    item.data[field] = update_data[field]
-                item.size = item.data[item.size_descriptor]
-                self.free_space -= item.size
-                if self.free_space < 0.0:
-                    self.free_space = 0.0
-                elif self.free_space > 1.0:
-                    self.free_space = 1.0
+                for size_descriptor in self.free_space:
+                    self.free_space[size_descriptor] += item.size[size_descriptor]
+                    item.data['size_data'][size_descriptor] = update_data['size_data'][size_descriptor]
+                    item.size[size_descriptor] = item.data['size_data'][size_descriptor]
+                    self.free_space[size_descriptor] -= item.size[size_descriptor]
+                    if self.free_space[size_descriptor] < 0.0:
+                        self.free_space[size_descriptor] = 0.0
+                    elif self.free_space[size_descriptor] > 1.0:
+                        self.free_space[size_descriptor] = 1.0
 
     def __str__(self):
         bin_items = []
@@ -107,4 +111,11 @@ class Bin():
             if isinstance(item, Bin.Item):
                 bin_items.append(item.jsonify())
         return {"bin index" : self.index, "space" : self.free_space, "items" : bin_items}
+
+    def get_type_value_dict(self,types,value):
+        ret = {}
+        for type_name in types:
+            ret[type_name] = value
+        
+        return ret
 
