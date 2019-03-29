@@ -134,29 +134,15 @@ class DockerMaster(object):
                         tmp_containers[container_name][type_name] = tmp_containers[container_name].get(type_name,0) + current_cont_stats[type_name]
                         self.add_debug_info(deb_individual[container_name],type_name,current_cont_stats[type_name])
                 
-                print("INNAN if memory!!!!!",tmp_containers)
-
-                # if(memory != None):
-                #     print("EFTER if memory!!!!!",memory)
-                #     tmp_containers[name][Definition.get_str_memory_avg()] = tmp_containers[name].get(Definition.get_str_memory_avg(),0) + current_cont_stats[Definition.get_str_memory_avg()]
-                
-                print("INNAN TMP!!!!!",current_cont_stats)
                 if( not tmp_containers[container_name] ):
                     del tmp_containers[container_name]
                     continue
                 count = counts.get(container_name,0) + 1
                 counts[container_name] = count
 
-    
-
-
-                # for type_name,type_avg in tmp_containers[container_name].items():
-                #     self.add_debug_info(deb_individual[container_name],type_name,current_cont_stats[type_name])
-
         for container_name,tmp_container in tmp_containers.items():
             
             count = counts[container_name]
-            print("EFTERTMP!!!!!",tmp_container)
             for type_name,type_avg in tmp_container.items():
                 self.update_avg_info(containers[container_name],type_name,type_avg,count)
         
@@ -216,7 +202,6 @@ class DockerMaster(object):
                 memory_stats_limit = int(stats['memory_stats']['limit'])
 
                 memory_usage_procent = self.calc_procent(memory_stats_usage, memory_stats_limit)
-                print("MEM",memory_usage_procent,memory_stats_usage,memory_stats_limit)
             except (KeyError, JSONDecodeError):
                 memory_usage_procent = None
 
