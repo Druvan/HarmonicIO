@@ -1,0 +1,7 @@
+"node_name": "PE Master",
+"master_addr": "192.168.1.8",
+"node_port": 8080,
+"node_data_port_range": [8090,8090],
+"std_idle_time": 5,
+"auto_scaling_enabled" : true,
+"minimum_CPU_size" : 0.02
