@@ -219,7 +219,7 @@ class ContainerAllocator():
                         cont[Definition.get_str_size_data()][Definition.get_str_memory_avg()] = self.default_cpu_share
                         
                         SysOut.debug_string("Container {} added size".format(cont))
-                bins_layout = self.packing_algorithm(container_list, self.bins, self.size_descriptor)
+                bins_layout = self.packing_algorithm(container_list, self.bins)
                 self.bins = bins_layout
 
                 for bin_ in self.bins:
