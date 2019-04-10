@@ -115,6 +115,7 @@ class DockerMaster(object):
 
         SysOut.debug_string("Containers to check: {}".format(conts_to_check))
         deb_individual = {}
+
         for container in conts_to_check:
             container_name = (str(container.image)).split('\'')[1]
             stats = self.get_container_stats(container)
@@ -132,14 +133,14 @@ class DockerMaster(object):
                 for type_name, type_value in current_cont_stats.items(): 
                     if(current_cont_stats[type_name] != None):
                         tmp_containers[container_name][type_name] = tmp_containers[container_name].get(type_name,0) + current_cont_stats[type_name]
-                        self.add_debug_info(deb_individual[container_name],type_name,current_cont_stats[type_name])
+                        self.add_debug_info(deb_individual[container_name],type_name[4:],current_cont_stats[type_name])
                 
                 if( not tmp_containers[container_name] ):
                     del tmp_containers[container_name]
                     continue
                 count = counts.get(container_name,0) + 1
                 counts[container_name] = count
-
+                
         for container_name,tmp_container in tmp_containers.items():
             
             count = counts[container_name]
@@ -218,9 +219,9 @@ class DockerMaster(object):
         if stats:
             try:
                 # calculate the change for the cpu usage of the container in between readings
-                cpu_delta = stats["cpu_stats"]["cpu_usage"]["total_usage"] - stats["precpu_stats"]["cpu_usage"]["total_usage"]
+                cpu_delta = float(stats["cpu_stats"]["cpu_usage"]["total_usage"]) - float(stats["precpu_stats"]["cpu_usage"]["total_usage"])
                 # calculate the change for the entire system between readings
-                system_delta = stats["cpu_stats"]["system_cpu_usage"] - stats["precpu_stats"]["system_cpu_usage"]
+                system_delta = float(stats["cpu_stats"]["system_cpu_usage"]) - float(stats["precpu_stats"]["system_cpu_usage"])
 
                 #if system_delta > 0.0 and cpu_delta > 0.0:
                 current_CPU = self.calc_procent(cpu_delta, system_delta) # Num of cpu's: len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"])
