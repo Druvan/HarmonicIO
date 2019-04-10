@@ -1,9 +1,11 @@
-"node_name": "PE Worker",
-  "node_port": 8081,
-  "node_internal_addr": "192.168.1.8",
-  "node_external_addr": "None",
-  "master_addr": "192.168.1.8",
-  "master_port": 8080,
-  "node_data_port_range": [9000, 9010],
-  "std_idle_time": 5,
-  "container_idle_timeout": 60
+{
+    "node_name": "PE Worker",
+    "node_port": 8081,
+    "node_internal_addr": "130.239.81.21",
+    "node_external_addr": "None",
+    "master_addr": "130.239.81.21",
+    "master_port": 8080,
+    "node_data_port_range": [9000, 9010],
+    "std_idle_time": 5,
+    "container_idle_timeout": 60
+}
