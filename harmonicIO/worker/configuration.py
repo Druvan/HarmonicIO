@@ -14,6 +14,7 @@ class Setting(object):
     __node_internal_addr = None
     __container_idle_timeout = None
     __report_interval = None
+    __bandwidth = None
 
     @staticmethod
     def get_setting():
@@ -106,6 +107,10 @@ class Setting(object):
     def get_report_interval():
         return Setting.__report_interval
 
+    @staticmethod
+    def get_bandwidth():
+        return Setting.__bandwidth
+
 
     @staticmethod
     def read_cfg_from_file():
@@ -142,6 +147,7 @@ class Setting(object):
                             Setting.__master_addr = cfg[Definition.get_str_master_addr()].strip()
                             Setting.__master_port = cfg[Definition.get_str_master_port()]
                             Setting.__node_external_addr = cfg[Definition.get_str_node_external_addr()].strip().lower()
+                            Setting.__bandwidth = cfg['max_network_bandwidth']
 
 
                             # Check for auto node name
