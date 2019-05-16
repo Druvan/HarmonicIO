@@ -39,7 +39,10 @@ class ContainerQueue():
         try:
             for item in self.__queue.queue:
                 if item[Definition.Container.get_str_con_image_name()] == c_image:
-                    item[Definition.get_str_size_data()] = update_data[Definition.get_str_size_data()]
+                    for size_descriptor in update_data[Definition.get_str_size_data()]:
+                        value = item.get(size_descriptor,None)
+                        if value:
+                            item[size_descriptor] = update_data[size_descriptor]
         finally:
             self.queue_unlock()
 
@@ -215,8 +218,8 @@ class ContainerAllocator():
                 for cont in container_list:
                     if cont.get(Definition.get_str_size_data()) == None:
                         cont[Definition.get_str_size_data()] = {}
-                        cont[Definition.get_str_size_data()][self.size_descriptor] = self.default_cpu_share
-                        cont[Definition.get_str_size_data()][Definition.get_str_memory_avg()] = self.default_cpu_share
+                        cont[Definition.get_str_size_data()][self.size_descriptor] = self.default_cpu_share 
+                        cont[Definition.get_str_size_data()][Definition.get_str_memory_avg()] = self.default_cpu_share #TODO: GÖR OM!!
                         
                         SysOut.debug_string("Container {} added size".format(cont))
                 bins_layout = self.packing_algorithm(container_list, self.bins)
@@ -278,12 +281,12 @@ class ContainerAllocator():
         finally:
             self.bin_unlock()
 
-    def update_queued_containers(self, c_name, update_data):
+    def update_queued_containers(self, c_name, update_data): 
         self.queue_lock()
         try:
             for item in self.allocation_q.queue:
                 if item.data[Definition.Container.get_str_con_image_name()] == c_name:
-                    for field in [self.size_descriptor]:
+                    for field in update_data:
                         item.data[field] = update_data[field]
         finally:
             self.queue_unlock()
@@ -312,8 +315,8 @@ class ContainerAllocator():
     def start_container_on_worker(self, target_worker, container):
         # send request to worker
         cont = dict(container)
-         
-        cont[Definition.Container.get_str_cpu_share()] = container[Definition.get_str_size_data()][self.size_descriptor]
+        
+        cont[Definition.get_str_size_data()] = container[Definition.get_str_size_data()]
         worker_url = "http://{}:{}/docker?token=None&command=create".format(target_worker[0], target_worker[1])
         req_data = bytes(json.dumps(cont), 'utf-8')
         resp = urlopen(worker_url, req_data)
@@ -386,8 +389,7 @@ class WorkerProfiler():
                             local_counter +=1
                     for descriptor in current_workers[worker]["local_image_stats"][container_name]:
  
-                        avg_sum[descriptor] = avg_sum.get(descriptor,0) + current_workers[worker]["local_image_stats"][container_name][descriptor] * local_counter
-                    [self.c_allocator.size_descriptor] * local_counter
+                        avg_sum[descriptor] = avg_sum.get(descriptor,0) + current_workers[worker]["local_image_stats"][container_name][descriptor] * float(local_counter)
                 total_counter += local_counter
             if total_counter:
                 data = {}
