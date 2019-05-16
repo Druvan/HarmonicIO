@@ -1,5 +1,7 @@
 import socket
 import docker
+from time import mktime
+from datetime import datetime
 from psutil import virtual_memory
 from .configuration import Setting
 from harmonicIO.general.definition import CStatus, Definition
@@ -34,7 +36,8 @@ class DockerMaster(object):
         self.__ports = []
         self.max_memory = virtual_memory().total
         self.__client = docker.from_env()
-        self.max_network_bandwidth = Setting.get("max_network_bandwidth",0)
+        self.max_network_bandwidth = Setting.get_bandwidth() * 1000000 # From MB to bytes
+        self.prev_network = {}
 
         SysOut.out_string("Docker master initialization complete.")
 
@@ -130,7 +133,7 @@ class DockerMaster(object):
                 # Add new measurement types here
                 current_cont_stats[Definition.get_str_size_desc()] = self.calculate_cpu_usage(stats)
                 current_cont_stats[Definition.get_str_memory_avg()] = self.calculate_memory_usage(stats)
-                current_cont_stats[Definition.get_str_network_avg()] = self.calculate_network_usage(stats)
+                current_cont_stats[Definition.get_str_network_avg()] = self.calculate_network_usage(stats,container_name)
                 
                 if not container_name in deb_individual:
                     deb_individual[container_name] = {}
@@ -154,7 +157,6 @@ class DockerMaster(object):
         containers["DEBUG"] = deb_individual
 
         SysOut.debug_string("Size per container: {}".format(containers))
-        print containers
         return containers
 
     def update_avg_info(self,container_dict,info_key,sum,count):
@@ -194,20 +196,36 @@ class DockerMaster(object):
         
         return stats
 
-    def calculate_network_usage(self,stats):
+    def calculate_network_usage(self,stats,container_name):
         """
         calculate given container stats
         Returns network usage of container across instances on current worker as a fraction of maximum network usage (1.0).
         Based on framework: https://github.com/eon01/DoMonit/blob/master/domonit/stats.py
         """
+        i=0
         network_usage_procent = None
-        
         if stats:
             try:
-                network_stats_usage = int(stats['network']['rx_bytes']+stats['network']['tx_bytes'])
-                network_stats_limit = self.max_network_bandwidth
+                network_stats = stats['networks']
+                current_bytes = 0
 
-                network_usage_procent = self.calc_procent(network_stats_usage, network_stats_limit)
+                for nic in network_stats.values():
+                    current_bytes += nic.get('rx_bytes') + nic.get('tx_bytes')
+
+                current_time = datetime.strptime(stats.get('read')[0:26],'%Y-%m-%dT%H:%M:%S.%f')
+                prev_network = self.prev_network.get(container_name)
+
+                if prev_network:
+                    prev_bytes = prev_network.get('bytes')
+                    prev_time = prev_network.get('time')
+                    diff_time = (current_time - prev_time).total_seconds()
+                    network_stats_usage = 0
+                    for nic in network_stats.values():
+                        network_stats_usage += nic.get('rx_bytes') + nic.get('tx_bytes') - prev_bytes
+
+                    network_stats_limit = self.max_network_bandwidth
+                    network_usage_procent = self.calc_procent(network_stats_usage, network_stats_limit)
+                self.prev_network[container_name] = {'bytes' : current_bytes,'time' : current_time}
             except (KeyError, JSONDecodeError):
                 network_usage_procent = None
 
