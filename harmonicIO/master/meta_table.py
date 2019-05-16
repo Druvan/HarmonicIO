@@ -107,7 +107,6 @@ class LookUpTable(object):
             
         @staticmethod
         def update_container(dict_input):
-
             def cont_in_table(dict_input):
                 conts = LookUpTable.Containers.__containers[dict_input[Definition.Container.get_str_con_image_name()]]
                 for cont in conts:
@@ -254,11 +253,13 @@ class LookUpTable(object):
                 
                 history = c_data.get("update_count", 0)
                 if history < 10000:
-                    c_data["update_count"] = history + 1
+                    history += 1
+                    c_data["update_count"] = history
+                    
                 for field in data:
-                    # TODO: Är uppdateringen av avg rätt?
-                    c_data[Definition.get_str_size_data()][field] = (history * float(c_data.get(field, 0)) + float(data[field])) / (history + 1)
-                    # TODO: Görs bara på CPU i nu läget.
+                    avg_old = c_data[Definition.get_str_size_data()].get(field, 0)
+                    c_data[Definition.get_str_size_data()][field] = avg_old + ((data.get(field,0)-avg_old)/history)
+                    # (history * float(c_data.get(field, 0)) + float(data[field])) / (history + 1) Gammal beräkning av avg.
                     if field == Definition.get_str_size_desc():
                         c_data[Definition.get_str_size_data()][field] = max(Setting.get_min_cpu(), c_data[Definition.get_str_size_data()][field])
                 container_dataset[container_image_name] = c_data
