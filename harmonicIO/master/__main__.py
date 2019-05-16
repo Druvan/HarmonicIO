@@ -1,3 +1,4 @@
+import sys
 from harmonicIO.general.services import SysOut
 from .resource_manager import IntelligentResourceManager
 from .binpacking import BinPacking
@@ -62,8 +63,13 @@ if __name__ == '__main__':
     """
     Entry point
     """
-    SysOut.out_string("Running Harmonic Master")
-    debug = input("Debug mode?  y/n\n")
+    if(len(sys.argv) == 2):
+        if(sys.argv[1] == "true"):
+            debug = "y"
+    else:
+        SysOut.out_string("Running Harmonic Master")
+        debug = input("Debug mode?  y/n\n")
+
     if debug == "y":
         SysOut.debug = True
         LookUpTable.debugging = True
