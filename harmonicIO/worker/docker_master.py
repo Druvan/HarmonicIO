@@ -1,5 +1,6 @@
 import socket
 import docker
+from psutil import virtual_memory
 from .configuration import Setting
 from harmonicIO.general.definition import CStatus, Definition
 from harmonicIO.general.services import SysOut
@@ -31,7 +32,7 @@ class DockerMaster(object):
 
     def __init__(self):
         self.__ports = []
-
+        self.total_memory = virtual_memory().total
         self.__client = docker.from_env()
 
         SysOut.out_string("Docker master initialization complete.")
@@ -200,7 +201,7 @@ class DockerMaster(object):
         if stats:
             try:
                 memory_stats_usage = int(stats['memory_stats']['usage'])
-                memory_stats_limit = int(stats['memory_stats']['limit'])
+                memory_stats_limit = self.total_memory
 
                 memory_usage_procent = self.calc_procent(memory_stats_usage, memory_stats_limit)
             except (KeyError, JSONDecodeError):
