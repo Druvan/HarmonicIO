@@ -4,7 +4,7 @@ from harmonicIO.general.definition import Definition
 class BinPacking():
 
     @staticmethod
-    def first_fit(input_list, bin_layout): # TODO: REMOVE size_desc
+    def first_fit(input_list, bin_layout):
         """
         perform a first fit bin packing on the input list, using the alredy existing list of available bins if provided
         """
