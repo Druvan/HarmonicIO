@@ -36,6 +36,9 @@ class Definition(object):
     @staticmethod
     def get_str_memory_avg():
         return "avg_memory"
+    @staticmethod
+    def get_str_network_avg():
+        return "avg_network"
         
     @staticmethod
     def get_str_size_data():
