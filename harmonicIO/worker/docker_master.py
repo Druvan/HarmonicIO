@@ -32,8 +32,9 @@ class DockerMaster(object):
 
     def __init__(self):
         self.__ports = []
-        self.total_memory = virtual_memory().total
+        self.max_memory = virtual_memory().total
         self.__client = docker.from_env()
+        self.max_network_bandwidth = Setting.get("max_network_bandwidth",0)
 
         SysOut.out_string("Docker master initialization complete.")
 
@@ -126,8 +127,10 @@ class DockerMaster(object):
                     containers[container_name] = {}
                     tmp_containers[container_name] = {}
                 
+                # Add new measurement types here
                 current_cont_stats[Definition.get_str_size_desc()] = self.calculate_cpu_usage(stats)
                 current_cont_stats[Definition.get_str_memory_avg()] = self.calculate_memory_usage(stats)
+                current_cont_stats[Definition.get_str_network_avg()] = self.calculate_network_usage(stats)
                 
                 if not container_name in deb_individual:
                     deb_individual[container_name] = {}
@@ -151,6 +154,7 @@ class DockerMaster(object):
         containers["DEBUG"] = deb_individual
 
         SysOut.debug_string("Size per container: {}".format(containers))
+        print containers
         return containers
 
     def update_avg_info(self,container_dict,info_key,sum,count):
@@ -190,6 +194,25 @@ class DockerMaster(object):
         
         return stats
 
+    def calculate_network_usage(self,stats):
+        """
+        calculate given container stats
+        Returns network usage of container across instances on current worker as a fraction of maximum network usage (1.0).
+        Based on framework: https://github.com/eon01/DoMonit/blob/master/domonit/stats.py
+        """
+        network_usage_procent = None
+        
+        if stats:
+            try:
+                network_stats_usage = int(stats['network']['rx_bytes']+stats['network']['tx_bytes'])
+                network_stats_limit = self.max_network_bandwidth
+
+                network_usage_procent = self.calc_procent(network_stats_usage, network_stats_limit)
+            except (KeyError, JSONDecodeError):
+                network_usage_procent = None
+
+        return network_usage_procent
+
     def calculate_memory_usage(self,stats):
         """
         calculate given container stats
@@ -201,7 +224,7 @@ class DockerMaster(object):
         if stats:
             try:
                 memory_stats_usage = int(stats['memory_stats']['usage'])
-                memory_stats_limit = self.total_memory
+                memory_stats_limit = self.max_memory
 
                 memory_usage_procent = self.calc_procent(memory_stats_usage, memory_stats_limit)
             except (KeyError, JSONDecodeError):
