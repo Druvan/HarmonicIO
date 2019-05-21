@@ -40,7 +40,6 @@ class Bin():
     
     class Item():
         def __init__(self, data):   
-            print(data['size_data'])
             self.size = data['size_data']
             self.data = data
 
@@ -61,8 +60,7 @@ class Bin():
     def pack(self, item_data):
         item = self.Item(item_data)
         for size_descriptor in self.free_space:
-            print(size_descriptor,": ",item.size[Definition.get_str_avg_()+size_descriptor],"<",self.free_space[size_descriptor],"-",self.space_margin[size_descriptor],"=",item.size[Definition.get_str_avg_()+size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor])
-            if item.size[Definition.get_str_avg_()+size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor]:
+           if item.size[Definition.get_str_avg_()+size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor]:
                 continue
             else:
                 del item  
