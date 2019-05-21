@@ -94,8 +94,8 @@ class Bin():
             if item.data[identifier] == update_data[identifier] and not item.data.get("bin_status") == Bin.ContainerBinStatus.RUNNING:
                 for size_descriptor in self.free_space:
                     self.free_space[size_descriptor] += item.size[Definition.get_str_avg_()+size_descriptor]
-                    item.data['size_data'][size_descriptor] = update_data['size_data'][size_descriptor]
-                    item.size[Definition.get_str_avg_()+size_descriptor] = item.data['size_data'][size_descriptor]
+                    item.data['size_data'][Definition.get_str_avg_()+size_descriptor] = update_data['size_data'][Definition.get_str_avg_()+size_descriptor]
+                    item.size[Definition.get_str_avg_()+size_descriptor] = item.data['size_data'][Definition.get_str_avg_()+size_descriptor]
                     self.free_space[size_descriptor] -= item.size[Definition.get_str_avg_()+size_descriptor]
                     if self.free_space[size_descriptor] < 0.0:
                         self.free_space[size_descriptor] = 0.0
