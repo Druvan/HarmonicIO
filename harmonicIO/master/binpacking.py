@@ -1,10 +1,10 @@
 from harmonicIO.general.definition import Definition
-
+from .configuration import IRMSetting
 
 class BinPacking():
 
     @staticmethod
-    def first_fit(input_list, bin_layout):
+    def first_fit(input_list, bin_layout,size_descriptors):
         """
         perform a first fit bin packing on the input list, using the alredy existing list of available bins if provided
         """
@@ -23,7 +23,7 @@ class BinPacking():
                     
             # otherwise make new bin and pack item there
             if not item_packed:
-                bins.append(Bin(len(bins)))
+                bins.append(Bin(len(bins),size_descriptors))
                 if bins[len(bins)-1].pack(item):
                     item_packed = True
         
@@ -40,6 +40,7 @@ class Bin():
     
     class Item():
         def __init__(self, data):   
+            print(data['size_data'])
             self.size = data['size_data']
             self.data = data
 
@@ -49,16 +50,19 @@ class Bin():
         def __str__(self):
             return "Item size: {} data: {}".format(self.size, self.data)
 
-    def __init__(self, bin_index):
+    def __init__(self, bin_index,size_descriptors):
+        #if
+
         self.items = []
-        self.free_space = self.get_type_value_dict([Definition.get_str_size_desc(),Definition.get_str_memory_avg()],1.0)
+        self.free_space = self.get_type_value_dict(size_descriptors,1.0)
+        self.space_margin = self.get_type_value_dict(size_descriptors,0.05)
         self.index = bin_index
-        self.space_margin = self.get_type_value_dict([Definition.get_str_size_desc(),Definition.get_str_memory_avg()],0.0)
 
     def pack(self, item_data):
         item = self.Item(item_data)
         for size_descriptor in self.free_space:
-            if item.size[size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor]:
+            print(size_descriptor,": ",item.size[Definition.get_str_avg_()+size_descriptor],"<",self.free_space[size_descriptor],"-",self.space_margin[size_descriptor],"=",item.size[Definition.get_str_avg_()+size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor])
+            if item.size[Definition.get_str_avg_()+size_descriptor] < self.free_space[size_descriptor] - self.space_margin[size_descriptor]:
                 continue
             else:
                 del item  
@@ -67,7 +71,7 @@ class Bin():
         item.data["bin_status"] = self.ContainerBinStatus.PACKED
         
         for size_descriptor in self.free_space:
-            self.free_space[size_descriptor] -= item.size[size_descriptor]
+            self.free_space[size_descriptor] -= item.size[Definition.get_str_avg_()+size_descriptor]
         self.items.append(item)
         return True
 
@@ -75,7 +79,7 @@ class Bin():
         for i in range(len(self.items)):
             if self.items[i].data[identifier] == target:
                 for size_descriptor in self.free_space:
-                    self.free_space[size_descriptor] += self.items[i].size[size_descriptor]
+                    self.free_space[size_descriptor] += self.items[i].size[Definition.get_str_avg_()+size_descriptor]
                     if self.free_space[size_descriptor] > 1.0:
                         self.free_space[size_descriptor] = 1.0
                 del self.items[i].data["bin_index"]
@@ -89,10 +93,10 @@ class Bin():
         for item in self.items:
             if item.data[identifier] == update_data[identifier] and not item.data.get("bin_status") == Bin.ContainerBinStatus.RUNNING:
                 for size_descriptor in self.free_space:
-                    self.free_space[size_descriptor] += item.size[size_descriptor]
+                    self.free_space[size_descriptor] += item.size[Definition.get_str_avg_()+size_descriptor]
                     item.data['size_data'][size_descriptor] = update_data['size_data'][size_descriptor]
-                    item.size[size_descriptor] = item.data['size_data'][size_descriptor]
-                    self.free_space[size_descriptor] -= item.size[size_descriptor]
+                    item.size[Definition.get_str_avg_()+size_descriptor] = item.data['size_data'][size_descriptor]
+                    self.free_space[size_descriptor] -= item.size[Definition.get_str_avg_()+size_descriptor]
                     if self.free_space[size_descriptor] < 0.0:
                         self.free_space[size_descriptor] = 0.0
                     elif self.free_space[size_descriptor] > 1.0:

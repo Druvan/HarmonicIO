@@ -101,10 +101,10 @@ class ContainerAllocator():
         self.allocation_lock = threading.Lock()
         self.bins = []
         self.bin_layout_lock = threading.Lock()
-        self.size_descriptor = Definition.get_str_size_desc()
+        self.size_descriptors = config.active_resource_types
 
         self.packing_interval = config.packing_interval
-        self.default_cpu_share = config.default_cpu_share
+        self.default_share = config.default_share
         self.profiler = WorkerProfiler(self.container_q, self, config.profiling_interval)
         if autoscaling:
             self.load_predictor = LoadPredictor(self, config.step_length,config.roc_lower, config.roc_upper,
@@ -218,11 +218,13 @@ class ContainerAllocator():
                 for cont in container_list:
                     if cont.get(Definition.get_str_size_data()) == None:
                         cont[Definition.get_str_size_data()] = {}
-                        cont[Definition.get_str_size_data()][self.size_descriptor] = self.default_cpu_share 
-                        cont[Definition.get_str_size_data()][Definition.get_str_memory_avg()] = self.default_cpu_share #TODO: GÖR OM!!
+                        for size_descriptor in self.size_descriptors:
+                            cont[Definition.get_str_size_data()][Definition.get_str_avg_()+size_descriptor] = self.default_share.get(size_descriptor,0.1)
+                        # cont[Definition.get_str_size_data()][Definition.get_str_size_desc()] = self.default_cpu_share 
+                        # cont[Definition.get_str_size_data()][Definition.get_str_memory_avg()] = self.default_cpu_share #TODO: GÖR OM!!
                         
                         SysOut.debug_string("Container {} added size".format(cont))
-                bins_layout = self.packing_algorithm(container_list, self.bins)
+                bins_layout = self.packing_algorithm(container_list, self.bins,self.size_descriptors)
                 self.bins = bins_layout
 
                 for bin_ in self.bins:
