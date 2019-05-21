@@ -28,6 +28,9 @@ class Definition(object):
     def get_str_node_name():
         return "node_name"
 
+    @staticmethod
+    def get_str_avg_():
+        return "avg_"
 
     @staticmethod
     def get_str_size_desc():
