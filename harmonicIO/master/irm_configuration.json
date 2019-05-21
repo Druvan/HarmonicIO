@@ -1,6 +1,6 @@
 {
     "packing_interval" : 1,
-    "default_cpu_share" : 0.3, 
+
     "profiling_interval" : 5,
     "predictor_interval" : 2,
     "lower_rate_limit" : 5,
@@ -8,7 +8,17 @@
     "slowdown_rate" : -10,
     "queue_size_limit" : 100,
     "scaleup_waiting_time" : 5,
-    "large_scaleup_amount" : 4,
+    "large_scaleup_amount" : 2,
     "small_scaleup_amount" : 1,
-    "container_request_TTL" : 50
+    "container_request_TTL" : 50,
+    "resource_types_active" : {
+        "cpu" : true,
+        "memory" : true,
+        "network" : true
+    },
+    "default_share" : {
+        "cpu" : 0.3,
+        "memory" : 0.3,
+        "network" : 0.3
+    }
 }

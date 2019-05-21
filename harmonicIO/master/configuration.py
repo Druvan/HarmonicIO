@@ -155,7 +155,7 @@ class IRMSetting():
         else:
             try:
                 self.packing_interval = int(data["packing_interval"])
-                self.default_cpu_share = float(data["default_cpu_share"])
+                self.default_share = data["default_share"]
                 self.profiling_interval = int(data["profiling_interval"])
                 self.step_length = int(data["predictor_interval"])
                 self.roc_lower = int(data["lower_rate_limit"])
@@ -166,6 +166,9 @@ class IRMSetting():
                 self.large_increment = int(data["large_scaleup_amount"])
                 self.small_increment = int(data["small_scaleup_amount"])
                 self.ttl = int(data["container_request_TTL"])
+                self.active_resource_types = [k for k,v in data["resource_types_active"].items() if v == True]
+
+
             except KeyError as e:
                 raise KeyError("Missing config settings for following option: {}".format(e.args[0]))
             except TypeError as e:
@@ -195,10 +198,14 @@ class IRMSetting():
                 if not error == "":
                     raise ValueError("Invalid value setting for option: {}".format(error))
 
+    def get_active_resource_type_array(resource_dict):
+        return [k for k,v in mydict.items() if v == true]
+
+
     def get_config(self):
         return json.dumps({
             "packing_interval" : self.packing_interval,
-            "default_cpu_share" : self.default_cpu_share,
+            "default_share" : self.default_share,
             "profiling_interval" : self.profiling_interval,
             "predictor_interval" : self.step_length,
             "lower_rate_limit" : self.roc_lower,
@@ -208,5 +215,6 @@ class IRMSetting():
             "scaleup_waiting_time" : self.waiting_time,
             "large_scaleup_amount" : self.large_increment,
             "small_scaleup_amount" : self.small_increment,
-            "container_request_TTL" : self.ttl
+            "container_request_TTL" : self.ttl,
+            "active_resource_types" : self.active_resource_types
         })
