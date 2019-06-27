@@ -222,9 +222,10 @@ class DockerMaster(object):
                     network_stats_usage = 0
                     for nic in network_stats.values():
                         network_stats_usage += nic.get('rx_bytes',0) + nic.get('tx_bytes',0)
-                    network_stats_usage - prev_bytes
+                    diff_bytes = network_stats_usage - prev_bytes
+                    current_bandwidth = diff_bytes/diff_time
                     
-                    network_usage_procent = self.calc_procent(network_stats_usage, self.max_network_bandwidth)
+                    network_usage_procent = self.calc_procent(current_bandwidth, self.max_network_bandwidth)
                 self.prev_network[container_name] = {'bytes' : current_bytes,'time' : current_time,"stats" : stats}
             except (KeyError, JSONDecodeError):
                 network_usage_procent = None
