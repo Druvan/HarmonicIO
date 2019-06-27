@@ -58,6 +58,11 @@ def run_msg_service():
     # server.shutdown()
     # server.server_close()
 
+def run_iperf():
+    import iperf3
+    server = iperf3.Server()
+    while True:
+        server.run()
 
 if __name__ == '__main__':
     """
@@ -94,3 +99,6 @@ if __name__ == '__main__':
 
     # Binding commander to the rest service and enable REST service
     pool.submit(run_rest_service)
+
+    # Start the bandwidth calculation server using iperf3
+    pool.submit(run_iperf)

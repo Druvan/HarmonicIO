@@ -114,6 +114,16 @@ class Setting(object):
 
     @staticmethod
     def read_cfg_from_file():
+
+        def cal_bandwidth(ip,time):
+            import iperf3
+            client = iperf3.Client()
+            client.duration = 1
+            client.server_hostname = ip
+            client.port = 5201
+            result = client.run()
+            return result.sent_Mbps
+
         from harmonicIO.general.services import Services
         if not Services.is_file_exist('harmonicIO/worker/configuration.json'):
             SysOut.terminate_string('harmonicIO/worker/configuration.json does not exist')
@@ -147,7 +157,8 @@ class Setting(object):
                             Setting.__master_addr = cfg[Definition.get_str_master_addr()].strip()
                             Setting.__master_port = cfg[Definition.get_str_master_port()]
                             Setting.__node_external_addr = cfg[Definition.get_str_node_external_addr()].strip().lower()
-                            Setting.__bandwidth = cfg['max_network_bandwidth']
+                            Setting.__bandwidth = cal_bandwidth(Setting.__master_addr,1)
+                            print("band",Setting.__bandwidth)
 
 
                             # Check for auto node name
