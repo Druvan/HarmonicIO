@@ -7,6 +7,5 @@
     "master_port": 8080,
     "node_data_port_range": [9000, 9010],
     "std_idle_time": 5,
-    "container_idle_timeout": 60,
-    "max_network_bandwidth" : 1000
+    "container_idle_timeout": 1
   }
