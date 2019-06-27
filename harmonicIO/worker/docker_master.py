@@ -111,6 +111,7 @@ class DockerMaster(object):
         containers = {}
         tmp_containers = {}
         counts = {}
+        network_counts = {}
 
         try:
             conts_to_check = self.__client.containers.list(all=False)
@@ -122,6 +123,7 @@ class DockerMaster(object):
         deb_individual = {}
 
         for container in conts_to_check:
+
             container_name = (str(container.image)).split('\'')[1]
             stats = self.get_container_stats(container)
             current_cont_stats = {}
@@ -133,7 +135,7 @@ class DockerMaster(object):
                 # Add new measurement types here
                 current_cont_stats[Definition.get_str_size_desc()] = self.calculate_cpu_usage(stats)
                 current_cont_stats[Definition.get_str_memory_avg()] = self.calculate_memory_usage(stats)
-                current_cont_stats[Definition.get_str_network_avg()] = self.calculate_network_usage(stats,container_name)
+                current_cont_stats[Definition.get_str_network_avg()] = self.calculate_network_usage(stats,container.short_id)
                 
                 if not container_name in deb_individual:
                     deb_individual[container_name] = {}
@@ -144,15 +146,23 @@ class DockerMaster(object):
                 
                 if( not tmp_containers[container_name] ):
                     del tmp_containers[container_name]
-                    continue
+                    del counts[container_name]
+
                 count = counts.get(container_name,0) + 1
                 counts[container_name] = count
+                
+                if(current_cont_stats[Definition.get_str_network_avg()]):
+                    network_count = network_counts.get(container_name,0) + 1
+                    network_counts[container_name] = network_count
                 
         for container_name,tmp_container in tmp_containers.items():
             
             count = counts[container_name]
             for type_name,type_avg in tmp_container.items():
-                self.update_avg_info(containers[container_name],type_name,type_avg,count)
+                if(type_name != Definition.get_str_network_avg()):
+                    self.update_avg_info(containers[container_name],type_name,type_avg,count)
+                else:
+                    self.update_avg_info(containers[container_name],type_name,type_avg,network_count)
         
         containers["DEBUG"] = deb_individual
 
@@ -196,7 +206,7 @@ class DockerMaster(object):
         
         return stats
 
-    def calculate_network_usage(self,stats,container_name):
+    def calculate_network_usage(self,stats,container_id):
         """
         calculate given container stats
         Returns network usage of container across instances on current worker as a fraction of maximum network usage (1.0).
@@ -213,7 +223,7 @@ class DockerMaster(object):
                     current_bytes += nic.get('rx_bytes') + nic.get('tx_bytes')
 
                 current_time = datetime.strptime(stats.get('read')[0:26],'%Y-%m-%dT%H:%M:%S.%f')
-                prev_network = self.prev_network.get(container_name)
+                prev_network = self.prev_network.get(container_id)
 
                 if prev_network:
                     prev_bytes = prev_network.get('bytes')
@@ -226,7 +236,7 @@ class DockerMaster(object):
                     current_bandwidth = diff_bytes/diff_time
                     
                     network_usage_procent = self.calc_procent(current_bandwidth, self.max_network_bandwidth)
-                self.prev_network[container_name] = {'bytes' : current_bytes,'time' : current_time,"stats" : stats}
+                self.prev_network[container_id] = {'bytes' : current_bytes,'time' : current_time,"stats" : stats}
             except (KeyError, JSONDecodeError):
                 network_usage_procent = None
 
