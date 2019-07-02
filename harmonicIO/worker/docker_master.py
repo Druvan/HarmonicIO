@@ -159,10 +159,10 @@ class DockerMaster(object):
             
             count = counts[container_name]
             for type_name,type_avg in tmp_container.items():
-                if(type_name != Definition.get_str_network_avg()):
-                    self.update_avg_info(containers[container_name],type_name,type_avg,count)
-                else:
+                if(type_name == Definition.get_str_network_avg()):
                     self.update_avg_info(containers[container_name],type_name,type_avg,network_count)
+                else:
+                    self.update_avg_info(containers[container_name],type_name,type_avg,count)
         
         containers["DEBUG"] = deb_individual
 
